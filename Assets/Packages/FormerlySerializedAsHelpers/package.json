@@ -1,0 +1,18 @@
+{
+    "name"       : "com.xjine.formerly_serialized_as_helpers",
+    "displayName": "FormerlySerializedAs Helpers", 
+    "version"    : "1.0.0",
+    "unity"      : "2022.3",
+    "description": "Open and save all scenes to apply FormerlySerializedAs.",
+    "author"     :
+    {
+        "name": "XJINE",
+        "url" : "https://github.com/XJINE"
+    },
+    "keywords":
+    [
+    ],
+    "dependencies":
+    {
+    }
+}
