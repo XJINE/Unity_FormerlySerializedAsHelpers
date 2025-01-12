@@ -10,7 +10,7 @@ public class Sample : MonoBehaviour
     [System.Serializable]
     public class SampleData
     {
-        [FormerlySerializedAs("sampleFloatA")]
+        // [FormerlySerializedAs("sampleFloat")]
         public float sampleFloat;
     }
 }

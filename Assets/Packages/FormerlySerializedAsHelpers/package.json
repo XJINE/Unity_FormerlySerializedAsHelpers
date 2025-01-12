@@ -3,7 +3,7 @@
     "displayName": "FormerlySerializedAs Helpers", 
     "version"    : "1.0.0",
     "unity"      : "2022.3",
-    "description": "Open and save all scenes to apply FormerlySerializedAs.",
+    "description": "Update all related assets that have the target type component or field to apply FormerlySerializedAs",
     "author"     :
     {
         "name": "XJINE",

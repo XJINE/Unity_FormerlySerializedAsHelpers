@@ -2,7 +2,8 @@
 
 <img src="https://github.com/XJINE/Unity_FormerlySerializedAsHelpers/blob/main/Screenshot.png" width="100%" height="auto" />
 
-Open and save all scenes to apply FormerlySerializedAs.
+Update all related assets that have the target type component or field to apply ``FormerlySerializedAs``.
+Be sure to backup your project before using.
 
 ## Importing
 

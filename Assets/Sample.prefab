@@ -46,4 +46,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sampleInt: -1
   sampleData:
-    sampleFloatA: -100
+    sampleFloat: -1

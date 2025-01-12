@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -12,7 +13,7 @@ namespace FormerlySerializedAsHelpers.Editor
     {
         private string targetTypeFullName = "";
 
-        [MenuItem("Custom/FormerlySerializedAsHelper")]
+        [MenuItem("Custom/"+nameof(FormerlySerializedAsHelper))]
         private static void Init()
         {
             GetWindow<FormerlySerializedAsHelper>(nameof(FormerlySerializedAsHelper));
@@ -20,6 +21,16 @@ namespace FormerlySerializedAsHelpers.Editor
 
         private void OnGUI()
         {
+            WrappedLabel("Update all related assets that have the target type component or field.");
+            WrappedLabel("Current scenes are all saved before processing.");
+            WrappedLabel("Be sure to backup your project before using.");
+
+            void WrappedLabel(string text)
+            {
+                GUILayout.Label(text, EditorStyles.wordWrappedLabel);
+            }
+
+            GUILayout.BeginVertical(GUI.skin.box);
             GUILayout.BeginHorizontal();
             GUILayout.Label("Target Type Full Name: ");
             targetTypeFullName = GUILayout.TextField(targetTypeFullName);
@@ -37,9 +48,7 @@ namespace FormerlySerializedAsHelpers.Editor
 
                 EditorSceneManager.OpenScene(lastScenePath, OpenSceneMode.Single);
             }
-
-            GUILayout.Label("Current scenes are all saved before processing.");
-            GUILayout.Label("Corresponding asset is being updated.");
+            GUILayout.EndVertical();
 
             GUI.enabled = true;
         }
@@ -81,17 +90,23 @@ namespace FormerlySerializedAsHelpers.Editor
                 var assetPath = AssetDatabase.GUIDToAssetPath(prefabGUID);
                 var asset     = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
 
-                if (HasTargetTypeComponentOrTargetTypeField(asset))
-                {
-                    Debug.Log($"Processing Prefab: {assetPath}");
-                    EditorUtility.SetDirty(asset);
-                    PrefabUtility.SavePrefabAsset(asset);
-                }
-            }
+                var (hasTarget, components) = HasTargetTypeComponentOrTargetTypeFieldInChildren(asset);
 
-            // DANGER:
-            // Use SavePrefabAsset instead of SaveAssets to preserve the values of existing instances.
-            // AssetDatabase.SaveAssets();
+                if (!hasTarget)
+                {
+                    continue;
+                }
+
+                Debug.Log($"Processing Prefab: {assetPath}");
+
+                foreach (var component in components)
+                {
+                    EditorUtility.SetDirty(component);
+                }
+
+                EditorUtility.SetDirty(asset);
+                PrefabUtility.SavePrefabAsset(asset);
+            }
         }
 
         private void UpdateScenes()
@@ -104,15 +119,25 @@ namespace FormerlySerializedAsHelpers.Editor
                 var scene           = EditorSceneManager.OpenScene(scenePath);
                 var rootGameObjects = scene.GetRootGameObjects();
 
-                foreach (var gameObject in rootGameObjects)
+                foreach (var rootGameObject in rootGameObjects)
                 {
-                    if (HasTargetTypeComponentOrTargetTypeField(gameObject))
+                    var (hasTarget, components) = HasTargetTypeComponentOrTargetTypeFieldInChildren(rootGameObject);
+
+                    if (!hasTarget)
                     {
-                        Debug.Log($"Processing scene: {scenePath}");
-                        EditorSceneManager.MarkSceneDirty(scene);
-                        EditorSceneManager.SaveScene(scene);
-                        break;
+                        continue;
                     }
+
+                    Debug.Log($"Processing scene: {scenePath}");
+
+                    foreach (var component in components)
+                    {
+                        EditorUtility.SetDirty(component);
+                    }
+
+                    EditorUtility.SetDirty(rootGameObject);
+                    EditorSceneManager.MarkSceneDirty(scene);
+                    EditorSceneManager.SaveScene(scene);
                 }
             }
         }
@@ -122,28 +147,29 @@ namespace FormerlySerializedAsHelpers.Editor
             return type.FullName == targetTypeFullName || HasTargetTypeField(type);
         }
 
-        private bool HasTargetTypeComponentOrTargetTypeField(GameObject gameObject)
+        private (bool, Component[]) HasTargetTypeComponentOrTargetTypeFieldInChildren(GameObject gameObject)
         {
             var components = gameObject.GetComponentsInChildren<Component>(true);
-            
+            var targets    = new List<Component>();
+
             foreach (var component in components)
             {
                 var componentType = component.GetType();
 
                 if (componentType.FullName == targetTypeFullName || HasTargetTypeField(componentType))
                 {
-                    return true;
+                    targets.Add(component);
                 }
             }
 
-            return false;
+            return (0 < targets.Count, targets.ToArray());
         }
 
         private bool HasTargetTypeField(Type type)
         {
             return type.GetFields(BindingFlags.Instance
-                                  | BindingFlags.Public
-                                  | BindingFlags.NonPublic)
+                                | BindingFlags.Public
+                                | BindingFlags.NonPublic)
                        .Any(field => field.FieldType.FullName == targetTypeFullName);
         }
     }
